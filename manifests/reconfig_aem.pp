@@ -101,11 +101,12 @@ define aem_curator::reconfig_aem (
         'install',
         ]
         #
-        # since we are only cleaning the install dir we are only removing AEM Packages
+        # since we are only cleaning the install dir
+        # we clean during runtime.
         #
         $list_clean_directories.each | Integer $index, String $clean_directory| {
           exec { "${aem_id}: Clean directory ${crx_quickstart_dir}/${clean_directory}/":
-            command => "rm -fr ${crx_quickstart_dir}/${clean_directory}/*.zip",
+            command => "rm -fr ${crx_quickstart_dir}/${clean_directory}/*",
             before  => [
                         Aem_aem["${aem_id}: Wait until CRX Package Manager is ready before reconfiguration"]
                       ],

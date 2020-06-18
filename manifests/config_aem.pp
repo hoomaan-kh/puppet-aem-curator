@@ -166,14 +166,23 @@ define aem_curator::config_aem (
     mode   => '0640',
     owner  => "aem-${aem_id}",
     group  => "aem-${aem_id}",
-  } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
-    run_mode            => $run_mode,
-    port                => $aem_ssl_port,
-    keystore            => $keystore_path,
+  } -> 
+  aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
+    # run_mode            => $run_mode,
+    # port                => $aem_ssl_port,
+    # keystore            => $keystore_path,
+    # keystore_password   => $aem_keystore_password,
+    # keystore_key_alias  => 'cqse',
+    # truststore          => '/usr/java/default/jre/lib/security/cacerts',
+    # truststore_password => 'changeit',
+    # aem_id              => $aem_id,
+    # run_mode            => $run_mode,
+    https_hostname      => $https_hostname,
+    https_port          => $aem_ssl_port,
     keystore_password   => $aem_keystore_password,
-    keystore_key_alias  => 'cqse',
-    truststore          => '/usr/java/default/jre/lib/security/cacerts',
-    truststore_password => 'changeit',
-    aem_id              => $aem_id,
-  }
+    truststore_password => $certificate_key_arn,
+    privatekey_file     => "${tmp_dir}/private_key.der",
+    certificate_file    => "${tmp_dir}/certificate_chain.crt",
+    aem_id              => "${aem_id}",
+}
 }
