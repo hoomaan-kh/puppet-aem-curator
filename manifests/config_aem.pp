@@ -9,7 +9,8 @@ define aem_curator::config_aem (
   $aem_keystore_path          = undef,
   $cert_base_url              = undef,
   $enable_create_system_users = true,
-  $credentials_hash           = undef
+  $credentials_hash           = undef,
+  $https_hostname             = 'localhost',
 ) {
 
   validate_bool($enable_create_system_users)
@@ -167,13 +168,12 @@ define aem_curator::config_aem (
     owner  => "aem-${aem_id}",
     group  => "aem-${aem_id}",
   } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
-    run_mode            => $run_mode,
-    port                => $aem_ssl_port,
-    keystore            => $keystore_path,
-    keystore_password   => $aem_keystore_password,
-    keystore_key_alias  => 'cqse',
-    truststore          => '/usr/java/default/jre/lib/security/cacerts',
-    truststore_password => 'changeit',
-    aem_id              => $aem_id,
+    https_hostname           => $https_hostname,
+    https_port               => $aem_ssl_port,
+    keystore_password        => $aem_keystore_password,
+    truststore_password      => 'changeit',
+    privatekey_file_path     => "${tmp_dir}/private_key.der",
+    certificate_file_path    => "${tmp_dir}/certificate_chain.crt",
+    aem_id                   => "${aem_id}",
   }
 }
