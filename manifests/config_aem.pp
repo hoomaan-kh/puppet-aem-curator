@@ -168,12 +168,12 @@ define aem_curator::config_aem (
     owner  => "aem-${aem_id}",
     group  => "aem-${aem_id}",
   } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
-    https_hostname           => $https_hostname,
-    https_port               => $aem_ssl_port,
+    https_hostname           => 'localhost',
+    https_port               => '5433',
     keystore_password        => $aem_keystore_password,
     truststore_password      => 'changeit',
     privatekey_file_path     => "${tmp_dir}/private_key.der",
     certificate_file_path    => "${tmp_dir}/certificate_chain.crt",
-    aem_id                   => "${aem_id}",
+    aem_id                   => 'publish',
   }
 }
