@@ -28,19 +28,18 @@ class aem_curator::install_java (
   $jdk_version        = '11.0.7',
 ) {
 
-    java::download { 'jdk11' :
+    java::download { "${jdk_version}" :
       ensure  => 'present',
       java_se => 'jdk',
-      url     => "$jdk_base_url/$jdk_filename",
+      url     => "${jdk_base_url}/${jdk_filename}",
       # url     => "${jdk_base_url}/$${jdk_filename}",
-    } ->  wait_for { "60 seconds":
-            seconds => 60,
-      }
+    }
 
   file { '/etc/ld.so.conf.d/99-libjvm.conf':
     ensure  => present,
-    content => "/usr/java/latest/jre/lib/amd64/server\n",
+    content => "/usr/java/jdk-${jdk_version}/lib/server\n",
     notify  => Exec['/sbin/ldconfig'],
+    require => Java::Download["${jdk_version}"],
   }
 
   exec { '/sbin/ldconfig':
@@ -59,7 +58,7 @@ class aem_curator::install_java (
       source  => "${cert_base_url}/aem.${part}",
       require => [
         File["${tmp_dir}/java"],
-        Wait_for["60 seconds"],
+        Java::Download["${jdk_version}"],
         ],
      } -> java_ks { "cqse-${idx}:/usr/java/jdk-${jdk_version}/lib/security/cacerts":
 
