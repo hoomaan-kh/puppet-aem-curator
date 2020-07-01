@@ -167,11 +167,23 @@ define aem_curator::config_aem (
     mode   => '0640',
     owner  => "aem-${aem_id}",
     group  => "aem-${aem_id}",
-  } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
+  } -> exec { 'Create the private key':
+       command => "openssl genrsa -aes256 -passout pass:${aem_keystore_password} -out ${tmp_dir}/localhostprivate.key 4096 \ openssl rsa -passin pass:${aem_keystore_password} -in ${tmp_dir}/localhostprivate.key -out ${tmp_dir}/localhostprivate.key",
+       path    => ['/usr/bin', '/usr/sbin', '/bin/'],
+     } -> exec { 'Generate a Certificate Signing Request (CSR) using private key':
+         command => "openssl req -sha256 -new -passin pass:${aem_keystore_password} -key ${tmp_dir}/localhostprivate.key -out ${tmp_dir}/localhost.csr -subj '/CN=localhost' ",
+         path    => ['/usr/bin', '/usr/sbin', '/bin/'],
+     } -> exec { 'Generate the SSL certificate and sign it with the private key':
+         command => "openssl x509 -req -days 365 -passin pass:${aem_keystore_password} -in ${tmp_dir}/localhost.csr -signkey ${tmp_dir}/localhostprivate.key -out ${tmp_dir}/localhost.crt",
+         path    => ['/usr/bin', '/usr/sbin', '/bin/'],
+     } -> exec { 'Convert the Private Key to DER format':
+         command => "openssl pkcs8 -topk8 -inform PEM -outform DER -passin pass:${aem_keystore_password} -in ${tmp_dir}/localhostprivate.key -out ${tmp_dir}/localhostprivate.der -nocrypt",
+         path    => ['/usr/bin', '/usr/sbin', '/bin/'],
+     } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
     https_hostname           => $https_hostname,
     https_port               => $aem_ssl_port,
-    keystore_password        => 'password',
-    truststore_password      => 'password',
+    keystore_password        => $aem_keystore_password,
+    truststore_password      => 'changeit',
     privatekey_file_path     => "${tmp_dir}/localhostprivate.der",
     certificate_file_path    => "${tmp_dir}/localhost.crt",
     aem_id                   => "${aem_id}",
