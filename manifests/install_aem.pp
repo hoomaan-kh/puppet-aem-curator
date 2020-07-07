@@ -102,10 +102,6 @@ define aem_curator::install_aem (
   $cert_base_url                 = undef,
   $aem_jvm_opts                  = [
     '-XX:+PrintGCDetails',
-    '-XX:+PrintGCTimeStamps',
-    '-XX:+PrintGCDateStamps',
-    '-XX:+PrintTenuringDistribution',
-    '-XX:+PrintGCApplicationStoppedTime',
     '-XX:+HeapDumpOnOutOfMemoryError',
   ],
   $aem_osgi_configs              = undef,
