@@ -96,16 +96,16 @@ define aem_curator::install_aem (
   $aem_type                      = undef,
   $aem_jvm_mem_opts              = '-Xss4m -Xmx8192m',
   $aem_keystore_password         = undef,
+  $aem_ssl_keystore_path         = undef,
+  $aem_ssl_keystore_password     = undef,
+  $aem_ssl_certificate_path      = undef,
+  $aem_ssl_certificate_password  = undef,
   $aem_keystore_path             = undef,
   $aem_profile                   = 'aem62_sp1_cfp3',
   $aem_sample_content            = false,
   $cert_base_url                 = undef,
   $aem_jvm_opts                  = [
     '-XX:+PrintGCDetails',
-    '-XX:+PrintGCTimeStamps',
-    '-XX:+PrintGCDateStamps',
-    '-XX:+PrintTenuringDistribution',
-    '-XX:+PrintGCApplicationStoppedTime',
     '-XX:+HeapDumpOnOutOfMemoryError',
   ],
   $aem_osgi_configs              = undef,
@@ -203,14 +203,18 @@ define aem_curator::install_aem (
     run_modes               => $run_modes,
     tmp_dir                 => $tmp_dir,
   } -> aem_curator::config_aem { "${aem_id}: Configure AEM":
-    aem_base              => $aem_base,
-    aem_id                => $aem_id,
-    aem_keystore_password => $aem_keystore_password,
-    aem_keystore_path     => $aem_keystore_path,
-    aem_ssl_port          => $aem_ssl_port,
-    cert_base_url         => $cert_base_url,
-    run_mode              => $aem_id,
-    tmp_dir               => $tmp_dir
+    aem_base                      => $aem_base,
+    aem_id                        => $aem_id,
+    aem_keystore_password         => $aem_keystore_password,
+    aem_ssl_keystore_path         => $aem_ssl_keystore_path,
+    aem_ssl_keystore_password     => $aem_ssl_keystore_password,
+    aem_ssl_certificate_path      => $aem_ssl_certificate_path,
+    aem_ssl_certificate_password  => $aem_ssl_certificate_password,
+    aem_keystore_path             => $aem_keystore_path,
+    aem_ssl_port                  => $aem_ssl_port,
+    cert_base_url                 => $cert_base_url,
+    run_mode                      => $aem_id,
+    tmp_dir                       => $tmp_dir
   }
 
   if $setup_repository_volume {
