@@ -179,7 +179,7 @@ define aem_curator::config_aem (
       path   => "${tmp_dir}/${aem_id}-certificate_chain.crt",
       ensure => present,
       source => $aem_ssl_certificate_path,
-    } aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
+    } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
     https_hostname           => $https_hostname,
     https_port               => $aem_ssl_port,
     keystore_password        => $aem_ssl_keystore_password,
