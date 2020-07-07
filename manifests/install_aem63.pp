@@ -14,12 +14,9 @@ define aem_curator::install_aem63(
   $aem_sample_content      = false,
   $aem_jvm_opts            = [
     '-XX:+PrintGCDetails',
-    '-XX:+PrintGCTimeStamps',
-    '-XX:+PrintGCDateStamps',
-    '-XX:+PrintTenuringDistribution',
-    '-XX:+PrintGCApplicationStoppedTime',
     '-XX:+HeapDumpOnOutOfMemoryError',
   ],
+  $aem_osgi_configs        = undef,
   $post_install_sleep_secs = 120,
 ) {
 
@@ -70,6 +67,7 @@ define aem_curator::install_aem63(
     sample_content => $aem_sample_content,
     jvm_mem_opts   => $aem_jvm_mem_opts,
     jvm_opts       => $aem_jvm_opts.join(' '),
+    osgi_configs   => $aem_osgi_configs,
     status         => 'running',
   } -> exec { "${aem_id}: Manual delay to let AEM become ready":
     command => "sleep ${post_install_sleep_secs}",

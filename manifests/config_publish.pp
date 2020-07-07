@@ -11,6 +11,36 @@
 # [*jvm_opts*]
 #   User defined additional JVM options
 #
+# [*aem_home_dir*]
+#  Path to the AEM Application home directory
+#  default: /opt/aem/publish
+#
+# [*publish_standby_osgi_config*]
+#  publish Standby OSGI configuration as hashmap.
+#  default: undef
+#
+# [*aem_context_root*]
+#  Set CONTEXT_ROOT in AEM start-env binary
+#  default: undef
+#
+# [*aem_debug_port*]
+#  Enable AEM Debug port
+#  default: undef
+#
+# [*aem_osgi_configs*]
+#  A Hashmap of OSGI to configure on AEM.
+#  A list of examples can be found here https://github.com/bstopp/puppet-aem/blob/1441ee00f4669b56e43476273bba5073f0985fbc/docs/aem-instance/OSGi-Configurations.md
+#  default: {}
+#
+# [*aem_runmodes*]
+#  A list of additional runmodes for AEM
+#  default: []
+#
+# [*aem_crx_packages*]
+#   A list of CRX packages.
+#   Allowed values are  s3: | http: | https: | file:
+#  default: undef
+#
 # === Copyright
 #
 # Copyright © 2017 Shine Solutions Group, unless otherwise noted.
@@ -41,18 +71,25 @@ class aem_curator::config_publish (
   $puppet_conf_dir,
   $tmp_dir,
   $aem_base                                      = '/opt',
+  $aem_context_root                              = undef,
+  $aem_crx_packages                              = undef,
+  $aem_debug_port                                = undef,
   $aem_healthcheck_source                        = undef,
   $aem_healthcheck_version                       = undef,
+  $aem_home_dir                                  = '/opt/aem/publish',
   $aem_id                                        = 'publish',
-  $aem_reconfiguration_run_modes                 = [],
-  $aem_ssl_keystore_password                     = undef,
   $aem_keystore_path                             = undef,
+  $aem_osgi_configs                              = {},
+  $aem_runmodes                                  = [],
+  $aem_ssl_keystore_password                     = undef,
   $certificate_arn                               = undef,
   $certificate_key_arn                           = undef,
   $data_volume_mount_point                       = undef,
   $delete_repository_index                       = false,
   $enable_aem_reconfiguration                    = false,
+  $enable_aem_installation_migration             = false,
   $enable_aem_reconfiguratiton_clean_directories = false,
+  $enable_aem_clean_directories                  = false,
   $enable_create_flush_agents                    = false,
   $enable_create_outbox_replication_agents       = false,
   $enable_post_start_sleep                       = false,
@@ -113,12 +150,9 @@ class aem_curator::config_publish (
     aem_curator::reconfig_pre_aem{ "${aem_id}: Execute Pre-reconfiguration for AEM":
       aem_base                          => $aem_base,
       aem_id                            => $aem_id,
-      aem_jvm_jmxremote_port            => $jmxremote_port,
-      aem_jvm_mem_opts                  => $jvm_mem_opts,
-      aem_port                          => $publish_port,
-      aem_runmodes                      => $aem_reconfiguration_run_modes,
       enable_aem_reconfiguration        => $enable_aem_reconfiguration,
-      enable_aem_installation_migration => $enable_aem_reconfiguration,
+      enable_aem_installation_migration => $enable_aem_installation_migration,
+      enable_clean_directories          => $enable_aem_reconfiguratiton_clean_directories,
       certificate_arn                   => $certificate_arn,
       certificate_key_arn               => $certificate_key_arn,
       crx_quickstart_dir                => $crx_quickstart_dir,
@@ -128,76 +162,22 @@ class aem_curator::config_publish (
                                             File["${crx_quickstart_dir}/install/"]
                                           ],
     }
-
-    # Copy created start-env template file to destination dir
-    # It has to live here because
-    file { "${crx_quickstart_dir}/bin/start-env":
-      ensure  => file,
-      source  => "${tmp_dir}/${aem_id}/start-env",
-      mode    => '0775',
-      owner   => "aem-${aem_id}",
-      group   => "aem-${aem_id}",
-      require => [
-                    File["${crx_quickstart_dir}/install/"],
-                    File["${tmp_dir}/${aem_id}/start-env"],
-                  ],
-      before  => [
-                    Service['aem-publish'],
-                  ]
-    }
-
-    file { "${crx_quickstart_dir}/bin/start.orig":
-      ensure  => file,
-      source  => "${tmp_dir}/${aem_id}/start.orig",
-      mode    => '0775',
-      owner   => "aem-${aem_id}",
-      group   => "aem-${aem_id}",
-      require => [
-                    File["${crx_quickstart_dir}/install/"],
-                    File["${tmp_dir}/${aem_id}/start.orig"],
-                  ]
-    }
-
-    file { "${crx_quickstart_dir}/bin/start":
-      ensure  => file,
-      source  => "${tmp_dir}/${aem_id}/start",
-      mode    => '0775',
-      owner   => "aem-${aem_id}",
-      group   => "aem-${aem_id}",
-      require => [
-                    File["${crx_quickstart_dir}/install/"],
-                    File["${tmp_dir}/${aem_id}/start"],
-                  ]
-    }
   }
 
-  if $jvm_mem_opts {
-    file_line { "${aem_id}: Set JVM memory opts":
-      ensure => present,
-      path   => "${crx_quickstart_dir}/bin/start-env",
-      line   => "JVM_MEM_OPTS='${jvm_mem_opts}'",
-      match  => '^JVM_MEM_OPTS',
-    }
-  }
-
+  # Updating provided JVM Options with JMXRemote JVM options if port is provided
   if $jmxremote_port {
-    file_line { "${aem_id}: enable JMXRemote":
-      ensure => present,
-      path   => "${crx_quickstart_dir}/bin/start-env",
-      line   => "JVM_OPTS=\"\$JVM_OPTS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${jmxremote_port} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=true -Djava.rmi.server.hostname=localhost\"",
-      after  => '^JVM_OPTS',
-      notify => Service['aem-publish'],
-    }
-  }
-
-  if $jvm_opts {
-    file_line { "${aem_id}: Add custom JVM OPTS settings":
-      ensure => present,
-      path   => "${crx_quickstart_dir}/bin/start-env",
-      line   => "JVM_OPTS=\"\$JVM_OPTS ${jvm_opts} \"",
-      after  => '^JVM_OPTS=\"\$JVM_OPTS',
-      notify => Service['aem-publish'],
-    }
+    $jmxremote_options = [
+      '-Dcom.sun.management.jmxremote',
+      "-Dcom.sun.management.jmxremote.port=${jmxremote_port}",
+      '-Dcom.sun.management.jmxremote.authenticate=false',
+      '-Dcom.sun.management.jmxremote.ssl=false',
+      '-Dcom.sun.management.jmxremote.local.only=true',
+      '-Djava.rmi.server.hostname=localhost'
+    ]
+    $_jvm_opts_list = concat([$jvm_opts], $jmxremote_options)
+    $_jvm_opts = $_jvm_opts_list.join(' ')
+  } else {
+    $_jvm_opts = $jvm_opts
   }
 
   if $enable_post_start_sleep {
@@ -208,15 +188,17 @@ class aem_curator::config_publish (
     }
   }
 
-  $list_clean_directories = [
-  'logs',
-  'threaddumps'
-  ]
+  if $enable_aem_clean_directories {
+    $list_clean_directories = [
+      'logs',
+      'threaddumps'
+    ]
 
-  $list_clean_directories.each | Integer $index, String $clean_directory| {
-    exec { "${aem_id}: Cleaning directory ${crx_quickstart_dir}/${clean_directory}/":
-      command => "rm -fr ${crx_quickstart_dir}/${clean_directory}/*",
-      before  => File["${crx_quickstart_dir}/install/"],
+    $list_clean_directories.each | Integer $index, String $clean_directory| {
+      exec { "${aem_id}: Cleaning directory ${crx_quickstart_dir}/${clean_directory}/":
+        command => "rm -fr ${crx_quickstart_dir}/${clean_directory}/*",
+        before  => File["${crx_quickstart_dir}/install/"],
+      }
     }
   }
 
@@ -255,11 +237,27 @@ class aem_curator::config_publish (
     }
   }
 
-  file { "${crx_quickstart_dir}/install/":
-    ensure => directory,
-    mode   => '0775',
-    owner  => "aem-${aem_id}",
-    group  => "aem-${aem_id}",
+  aem_resources::puppet_aem_resources_set_config { 'Set puppet-aem-resources config file for publish':
+    conf_dir => $puppet_conf_dir,
+    timeout  => $publish_timeout,
+    protocol => $publish_protocol,
+    host     => 'localhost',
+    port     => $publish_port,
+    debug    => false,
+    aem_id   => $aem_id,
+  }  -> aem_resources::publish_set_config { 'Set publish config':
+    aem_context_root => $aem_context_root,
+    aem_crx_packages => $aem_crx_packages,
+    aem_debug_port   => $aem_debug_port,
+    aem_home_dir     => $aem_home_dir,
+    aem_id           => $aem_id,
+    aem_port         => $publish_port,
+    aem_runmodes     => $aem_runmodes,
+    aem_user         => "aem-${aem_id}",
+    aem_user_group   => "aem-${aem_id}",
+    jvm_mem_opts     => $jvm_mem_opts,
+    jvm_opts         => $_jvm_opts,
+    osgi_configs     => $aem_osgi_configs
   } -> archive { "${crx_quickstart_dir}/install/aem-password-reset-content-${aem_password_reset_version}.zip":
     ensure => present,
     source => $aem_password_reset_source,
@@ -276,14 +274,6 @@ class aem_curator::config_publish (
     mode   => '0775',
     owner  => "aem-${aem_id}",
     group  => "aem-${aem_id}",
-  } -> aem_resources::puppet_aem_resources_set_config { 'Set puppet-aem-resources config file for publish':
-    conf_dir => $puppet_conf_dir,
-    timeout  => $publish_timeout,
-    protocol => $publish_protocol,
-    host     => 'localhost',
-    port     => $publish_port,
-    debug    => false,
-    aem_id   => $aem_id,
   } -> service { 'aem-publish':
     ensure => 'running',
     enable => true,

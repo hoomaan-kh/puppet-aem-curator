@@ -101,12 +101,11 @@ define aem_curator::reconfig_aem (
         'install',
         ]
         #
-        # since we are only cleaning the install dir
-        # we clean during runtime.
+        # since we are only cleaning the install dir we are only removing AEM Packages
         #
         $list_clean_directories.each | Integer $index, String $clean_directory| {
           exec { "${aem_id}: Clean directory ${crx_quickstart_dir}/${clean_directory}/":
-            command => "rm -fr ${crx_quickstart_dir}/${clean_directory}/*",
+            command => "rm -fr ${crx_quickstart_dir}/${clean_directory}/*.zip",
             before  => [
                         Aem_aem["${aem_id}: Wait until CRX Package Manager is ready before reconfiguration"]
                       ],
@@ -151,18 +150,22 @@ define aem_curator::reconfig_aem (
     }
 
     aem_curator::config_aem { "Configure AEM ${aem_id}":
-      aem_base                   => $aem_base,
-      aem_id                     => $aem_id,
-      aem_keystore_password      => $aem_ssl_keystore_password,
-      aem_keystore_path          => $aem_keystore_path,
-      aem_ssl_port               => $aem_ssl_port,
-      aem_system_users           => $aem_system_users,
-      cert_base_url              => "file://${tmp_dir_final}/certs",
-      enable_create_system_users => $enable_create_system_users,
-      credentials_hash           => $credentials_hash,
-      run_mode                   => $run_mode,
-      tmp_dir                    => $tmp_dir_final,
-      require                    => Aem_aem["${aem_id}: Wait until CRX Package Manager is ready before reconfiguration"]
+      aem_base                      => $aem_base,
+      aem_id                        => $aem_id,
+      aem_keystore_password         => $aem_ssl_keystore_password,
+      aem_ssl_keystore_path         => $aem_ssl_keystore_path,
+      aem_ssl_keystore_password     => $aem_ssl_keystore_password,
+      aem_ssl_certificate_path      => $aem_ssl_certificate_path,
+      aem_ssl_certificate_password  => $aem_ssl_certificate_password,
+      aem_keystore_path             => $aem_keystore_path,
+      aem_ssl_port                  => $aem_ssl_port,
+      aem_system_users              => $aem_system_users,
+      cert_base_url                 => "file://${tmp_dir_final}/certs",
+      enable_create_system_users    => $enable_create_system_users,
+      credentials_hash              => $credentials_hash,
+      run_mode                      => $run_mode,
+      tmp_dir                       => $tmp_dir_final,
+      require                       => Aem_aem["${aem_id}: Wait until CRX Package Manager is ready before reconfiguration"]
     } -> aem_aem { "${aem_id}: Wait until login page is ready after reconfiguration":
       ensure => login_page_is_ready,
       aem_id => $aem_id,

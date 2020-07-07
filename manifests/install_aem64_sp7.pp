@@ -1,4 +1,4 @@
-define aem_curator::install_aem64_sp3(
+define aem_curator::install_aem64_sp7(
   $aem_license_base,
   $aem_artifacts_base,
   $aem_healthcheck_version,
@@ -37,12 +37,12 @@ define aem_curator::install_aem64_sp3(
     post_install_sleep_secs => $post_install_sleep_secs,
     aem_id                  => $aem_id,
     aem_type                => $aem_type,
-  } -> aem_curator::install_aem_package { "${aem_id}: Install service pack 3":
+  } -> aem_curator::install_aem_package { "${aem_id}: Install service pack 7":
     tmp_dir         => $tmp_dir,
-    file_name       => 'AEM-6.4.3.0-6.4.3.zip',
+    file_name       => 'AEM-6.4.7.0-6.4.7.zip',
     package_name    => 'aem-service-pkg',
     package_group   => 'adobe/cq640/servicepack',
-    package_version => '6.4.3',
+    package_version => '6.4.7',
     artifacts_base  => $aem_artifacts_base,
     aem_id          => $aem_id,
   }

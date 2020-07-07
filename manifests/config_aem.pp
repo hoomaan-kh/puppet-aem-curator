@@ -2,14 +2,19 @@ define aem_curator::config_aem (
   $run_mode,
   $tmp_dir,
   $aem_ssl_port,
-  $aem_system_users           = undef,
-  $aem_base                   = '/opt',
-  $aem_id                     = 'aem',
-  $aem_keystore_password      = undef,
-  $aem_keystore_path          = undef,
-  $cert_base_url              = undef,
-  $enable_create_system_users = true,
-  $credentials_hash           = undef
+  $aem_system_users              = undef,
+  $aem_base                      = '/opt',
+  $aem_id                        = 'aem',
+  $aem_keystore_password         = undef,
+  $aem_ssl_keystore_path         = undef,
+  $aem_ssl_keystore_password     = undef,
+  $aem_ssl_certificate_path      = undef,
+  $aem_ssl_certificate_password  = undef,
+  $aem_keystore_path             = undef,
+  $cert_base_url                 = undef,
+  $enable_create_system_users    = true,
+  $credentials_hash              = undef,
+  $https_hostname                = 'localhost',
 ) {
 
   validate_bool($enable_create_system_users)
@@ -166,14 +171,21 @@ define aem_curator::config_aem (
     mode   => '0640',
     owner  => "aem-${aem_id}",
     group  => "aem-${aem_id}",
-  } -> aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
-    run_mode            => $run_mode,
-    port                => $aem_ssl_port,
-    keystore            => $keystore_path,
-    keystore_password   => $aem_keystore_password,
-    keystore_key_alias  => 'cqse',
-    truststore          => '/usr/java/default/jre/lib/security/cacerts',
-    truststore_password => 'changeit',
-    aem_id              => $aem_id,
+  } -> archive { "${aem_id}- download private_key from ${aem_ssl_keystore_path}":
+      path   => "${tmp_dir}/${aem_id}-private_key.der",
+      ensure => present,
+      source => $aem_ssl_keystore_path,
+    } -> archive { "${aem_id}- download certificate_chain from ${aem_ssl_certificate_path} ":
+      path   => "${tmp_dir}/${aem_id}-certificate_chain.crt",
+      ensure => present,
+      source => $aem_ssl_certificate_path,
+    } aem_resources::author_publish_enable_ssl { "${aem_id}: Enable SSL":
+    https_hostname           => $https_hostname,
+    https_port               => $aem_ssl_port,
+    keystore_password        => $aem_ssl_keystore_password,
+    truststore_password      => $aem_ssl_certificate_password,
+    privatekey_file_path     => "${tmp_dir}/${aem_id}-private_key.der",
+    certificate_file_path    => "${tmp_dir}/${aem_id}-certificate_chain.crt",
+    aem_id                   => "${aem_id}",
   }
 }
